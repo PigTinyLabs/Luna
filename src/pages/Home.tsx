@@ -547,7 +547,7 @@ const Home = () => {
           )}
 
           {/* Unified Log Period Button */}
-          {startOfDay(selectedDate) <= startOfDay(today) && selectedChance !== 'Đang Hành Kinh' && !usePartnerData && (
+          {startOfDay(selectedDate) <= startOfDay(today) && selectedChance !== 'Đang Hành Kinh' && selectedChance !== 'Trứng rụng' && !usePartnerData && (
             <button 
               onClick={(e) => { e.stopPropagation(); handleStartPeriod(selectedDate); }}
               style={{
