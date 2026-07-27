@@ -180,7 +180,7 @@ const Home = () => {
   const isPredicted = (cycle && allCycles.length > 0) ? isDatePredicted(selectedDate, allCycles) : false;
   
   const showCountdownOverride = !isPredicted && !isLate && ((daysUntilNextPeriod !== null && daysUntilNextPeriod > 0 && daysUntilNextPeriod <= 3) || (daysUntilNextOvulation !== null && daysUntilNextOvulation > 0 && daysUntilNextOvulation <= 3));
-  const isTransparentCircle = isPredicted || showCountdownOverride || isLate;
+  const isTransparentCircle = isPredicted || showCountdownOverride;
 
   // If male and not connected to a partner, show empty state immediately
   if (isMale && !profile?.partnerUid) {
@@ -370,15 +370,26 @@ const Home = () => {
               width: '250px',
               height: '250px',
               borderRadius: '50%',
-              background: isTransparentCircle ? 'transparent' : (cycle ? 'var(--surface)' : 'var(--border)'),
-              border: isTransparentCircle ? 'none' : `10px solid ${selectedChance === 'Trứng rụng' ? 'var(--secondary)' : (selectedChance === 'Đang Hành Kinh' || selectedChance === 'Dự đoán hành kinh') ? '#e84393' : 'var(--primary-light)'}`,
+              background: isLate
+                ? 'radial-gradient(circle at 40% 35%, rgba(232,67,147,0.18) 0%, rgba(232,67,147,0.06) 60%, transparent 100%)'
+                : isTransparentCircle ? 'transparent' : (cycle ? 'var(--surface)' : 'var(--border)'),
+              border: isLate
+                ? '3px dashed rgba(232,67,147,0.6)'
+                : isTransparentCircle ? 'none' : `10px solid ${
+                    selectedChance === 'Trứng rụng' ? 'var(--secondary)'
+                    : (selectedChance === 'Đang Hành Kinh' || selectedChance === 'Dự đoán hành kinh') ? '#e84393'
+                    : 'var(--primary-light)'
+                  }`,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: isTransparentCircle ? 'none' : (selectedChance === 'Trứng rụng' 
-                ? '0 0 30px rgba(253, 203, 110, 0.3)' 
-                : 'var(--shadow-md)'),
+              boxShadow: isLate
+                ? undefined
+                : isTransparentCircle ? 'none' : (selectedChance === 'Trứng rụng'
+                  ? '0 0 30px rgba(253, 203, 110, 0.3)'
+                  : 'var(--shadow-md)'),
+              animation: isLate ? 'lateGlow 2.5s ease-in-out infinite' : undefined,
               backdropFilter: 'blur(10px)',
               WebkitBackdropFilter: 'blur(10px)',
               transition: 'box-shadow 0.4s ease, border-color 0.4s ease, background 0.4s ease',
@@ -394,23 +405,36 @@ const Home = () => {
               </h2>
             </>
           ) : isLate ? (
-            // Trễ kinh: hiển thị số ngày trễ, không dự đoán thêm
+            // Trễ kinh: thiết kế đẹp hơn với warning icon + số ngày nổi bật
             <>
-              <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.85rem' }}>
+              <span style={{ fontSize: '1.5rem', marginBottom: '4px' }}>⚠️</span>
+              <span style={{ color: 'rgba(232,67,147,0.7)', fontWeight: 600, fontSize: '0.8rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Kỳ kinh chậm
               </span>
-              <h2 style={{ fontSize: '3.5rem', margin: '0', color: 'var(--primary)', lineHeight: 1, fontWeight: 800 }}>
-                {lateDays}
-              </h2>
-              <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.9rem', marginBottom: '8px' }}>
-                ngày
-              </span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', margin: '4px 0 2px' }}>
+                <h2 style={{ fontSize: '4.5rem', margin: '0', color: '#e84393', lineHeight: 1, fontWeight: 900 }}>
+                  {lateDays}
+                </h2>
+                <span style={{ color: 'rgba(232,67,147,0.8)', fontWeight: 600, fontSize: '1.1rem' }}>ngày</span>
+              </div>
               {!usePartnerData && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); handleStartPeriod(); }}
-                  style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 4px 10px rgba(232, 67, 147, 0.4)' }}
+                  style={{
+                    marginTop: '8px',
+                    background: 'linear-gradient(135deg, #e84393, #c0307a)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 20px',
+                    borderRadius: '20px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    boxShadow: '0 4px 14px rgba(232, 67, 147, 0.5)',
+                    letterSpacing: '0.02em'
+                  }}
                 >
-                  Đã có kinh
+                  ♥ Đã có kinh
                 </button>
               )}
             </>

@@ -214,13 +214,14 @@ export const getGlobalPregnancyChance = (currentDate: Date, cycles: Cycle[]): Pr
   const expectedNextPeriodDay = startOfDay(lastCycle.expectedNextPeriod);
 
   // Kiểm tra xem ngày đang xét có phải là ngày quá hạn kinh (sau ngày dự kiến mà chưa xác nhận)
-  // Chỉ áp dụng cho ngày hôm nay hoặc sau hôm nay, và đã qua ít nhất 1 ngày so với dự kiến
+  // Chỉ dánh dấu 'Trễ kinh' cho đúng hôm nay — các ngày tương lai không rõ nên không dự đoán thêm
   const today = startOfDay(new Date());
-  const isStrictlyAfterExpected = normalizedDate > expectedNextPeriodDay; // > 0 ngày sau dự kiến
-  const isAfterOrToday = normalizedDate >= today;
-  if (isStrictlyAfterExpected && isAfterOrToday) {
-    // Ngày dự kiến đã qua ít nhất 1 ngày và chưa có chu kỳ mới → trễ kinh, không dự đoán thêm
+  if (isSameDay(normalizedDate, today) && normalizedDate > expectedNextPeriodDay) {
     return 'Trễ kinh';
+  }
+  // Các ngày tương lai sau ngày kiến dự kiến: không dự đoán (trạng thái chưa rõ)
+  if (normalizedDate > expectedNextPeriodDay && normalizedDate > today) {
+    return 'Chưa rõ';
   }
 
   // Check historical/current cycles
