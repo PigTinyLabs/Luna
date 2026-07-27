@@ -143,12 +143,30 @@ export const isDatePredicted = (currentDate: Date, cycles: Cycle[]): boolean => 
 };
 
 export const getNextEvents = (currentDate: Date, cycles: Cycle[]) => {
-  if (cycles.length === 0) return { nextPeriodDate: null, nextOvulationDate: null, daysUntilNextPeriod: null, daysUntilNextOvulation: null };
+  if (cycles.length === 0) return { nextPeriodDate: null, nextOvulationDate: null, daysUntilNextPeriod: null, daysUntilNextOvulation: null, isLate: false, lateDays: 0 };
   const normalizedDate = startOfDay(currentDate);
   const sorted = [...cycles].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
   const currentCycle = sorted[sorted.length - 1];
-  
+
+  // Kiểm tra trễ kinh: ngày kinh dự kiến đã qua mà chưa có chu kỳ mới nào được xác nhận
+  const expectedNextPeriodDay = startOfDay(currentCycle.expectedNextPeriod);
+  const daysFromExpected = differenceInDays(normalizedDate, expectedNextPeriodDay);
+  const isLate = daysFromExpected > 0; // Ngày kinh đã qua (> 0 tức là hôm nay sau ngày dự kiến)
+  const lateDays = isLate ? daysFromExpected : 0;
+
   const future = predictFutureCycles(cycles, 12);
+
+  // Khi đang trễ kinh, không tính ovulation và period tiếp theo (chờ người dùng xác nhận)
+  if (isLate) {
+    return {
+      nextPeriodDate: currentCycle.expectedNextPeriod,
+      nextOvulationDate: null,
+      daysUntilNextPeriod: -lateDays,
+      daysUntilNextOvulation: null,
+      isLate: true,
+      lateDays,
+    };
+  }
   
   const allPeriods = [currentCycle.expectedNextPeriod, ...future.map(f => f.start)];
   const allOvulations = [currentCycle.expectedOvulation, ...future.map(f => f.ovulation)];
@@ -161,10 +179,12 @@ export const getNextEvents = (currentDate: Date, cycles: Cycle[]) => {
     nextOvulationDate,
     daysUntilNextPeriod: nextPeriodDate ? differenceInDays(startOfDay(nextPeriodDate), normalizedDate) : null,
     daysUntilNextOvulation: nextOvulationDate ? differenceInDays(startOfDay(nextOvulationDate), normalizedDate) : null,
+    isLate: false,
+    lateDays: 0,
   };
 };
 
-export type PregnancyChance = 'Trứng rụng' | 'Cao' | 'Thấp' | 'An toàn' | 'Đang Hành Kinh' | 'Dự đoán hành kinh' | 'Chưa rõ';
+export type PregnancyChance = 'Trứng rụng' | 'Cao' | 'Thấp' | 'An toàn' | 'Đang Hành Kinh' | 'Dự đoán hành kinh' | 'Chưa rõ' | 'Trễ kinh';
 
 export const predictFutureCycles = (cycles: Cycle[], count: number = 6) => {
   if (cycles.length === 0) return [];
@@ -188,6 +208,21 @@ export const predictFutureCycles = (cycles: Cycle[], count: number = 6) => {
 export const getGlobalPregnancyChance = (currentDate: Date, cycles: Cycle[]): PregnancyChance => {
   if (cycles.length === 0) return 'Chưa rõ';
   
+  const sorted = [...cycles].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+  const lastCycle = sorted[sorted.length - 1];
+  const normalizedDate = startOfDay(currentDate);
+  const expectedNextPeriodDay = startOfDay(lastCycle.expectedNextPeriod);
+
+  // Kiểm tra xem ngày đang xét có phải là ngày quá hạn kinh (sau ngày dự kiến mà chưa xác nhận)
+  // Chỉ áp dụng cho ngày hôm nay hoặc sau hôm nay, và đã qua ít nhất 1 ngày so với dự kiến
+  const today = startOfDay(new Date());
+  const isStrictlyAfterExpected = normalizedDate > expectedNextPeriodDay; // > 0 ngày sau dự kiến
+  const isAfterOrToday = normalizedDate >= today;
+  if (isStrictlyAfterExpected && isAfterOrToday) {
+    // Ngày dự kiến đã qua ít nhất 1 ngày và chưa có chu kỳ mới → trễ kinh, không dự đoán thêm
+    return 'Trễ kinh';
+  }
+
   // Check historical/current cycles
   for (const c of cycles) {
     const cycleStart = startOfDay(c.startDate);
@@ -207,7 +242,7 @@ export const getGlobalPregnancyChance = (currentDate: Date, cycles: Cycle[]): Pr
     if (isFertile) return 'Cao';
   }
 
-  // Check future predicted cycles
+  // Chỉ dự đoán chu kỳ tương lai khi chưa trễ kinh
   const future = predictFutureCycles(cycles, 12);
   for (const f of future) {
     const isBleeding = isWithinInterval(currentDate, {

@@ -145,7 +145,7 @@ const Home = () => {
   const today = new Date();
   const cycleDay = (cycle && allCycles.length > 0) ? getGlobalCycleDay(selectedDate, allCycles) : 0;
   const smartPred = allCycles.length > 0 ? calculateSmartPredictions(allCycles) : null;
-  const { nextOvulationDate, daysUntilNextPeriod, daysUntilNextOvulation } = getNextEvents(selectedDate, allCycles);
+  const { nextOvulationDate, daysUntilNextPeriod, daysUntilNextOvulation, isLate, lateDays } = getNextEvents(selectedDate, allCycles);
 
   const isMale = profile?.gender === 'male';
 
@@ -170,6 +170,7 @@ const Home = () => {
       case 'Cao': return 'fertile';
       case 'Thấp': return 'low';
       case 'An toàn': return 'safe';
+      case 'Trễ kinh': return 'period';
       default: return '';
     }
   };
@@ -178,8 +179,8 @@ const Home = () => {
   const isSelectedToday = isSameDay(selectedDate, today);
   const isPredicted = (cycle && allCycles.length > 0) ? isDatePredicted(selectedDate, allCycles) : false;
   
-  const showCountdownOverride = !isPredicted && ((daysUntilNextPeriod !== null && daysUntilNextPeriod > 0 && daysUntilNextPeriod <= 3) || (daysUntilNextOvulation !== null && daysUntilNextOvulation > 0 && daysUntilNextOvulation <= 3));
-  const isTransparentCircle = isPredicted || showCountdownOverride;
+  const showCountdownOverride = !isPredicted && !isLate && ((daysUntilNextPeriod !== null && daysUntilNextPeriod > 0 && daysUntilNextPeriod <= 3) || (daysUntilNextOvulation !== null && daysUntilNextOvulation > 0 && daysUntilNextOvulation <= 3));
+  const isTransparentCircle = isPredicted || showCountdownOverride || isLate;
 
   // If male and not connected to a partner, show empty state immediately
   if (isMale && !profile?.partnerUid) {
@@ -220,6 +221,8 @@ const Home = () => {
         return 'Giai đoạn tỉ lệ thụ thai thấp. Cơ thể đang chuẩn bị cho pha hoàng thể.';
       case 'An toàn':
         return 'Giai đoạn an toàn. Hormone ổn định, cơ thể ở trạng thái bình thường.';
+      case 'Trễ kinh':
+        return 'Kỳ kinh chưa xuất hiện đúng hạn. Hãy theo dõi thêm. Trễ kinh có thể do căng thẳng, thay đổi cân nặng hoặc mang thai.';
       default:
         return 'Ghi chép chu kỳ để nhận phân tích chi tiết hơn nhé!';
     }
@@ -238,6 +241,8 @@ const Home = () => {
         return 'Có thể xuất hiện mụn, chướng bụng nhẹ, tâm trạng thay đổi.';
       case 'An toàn':
         return 'Cơ thể thường ở trạng thái ổn định nhất, ít triệu chứng bất thường.';
+      case 'Trễ kinh':
+        return 'Có thể có đau ngực, buồn nôn, mệt mỏi hoặc chướng bụng. Nếu trễ > 7 ngày, nên thử que thử thai.';
       default:
         return 'Theo dõi cơ thể và ghi chép để nhận phân tích chính xác hơn.';
     }
@@ -388,6 +393,27 @@ const Home = () => {
                 {(daysUntilNextPeriod !== null && daysUntilNextPeriod <= 3) ? daysUntilNextPeriod : daysUntilNextOvulation} ngày nữa
               </h2>
             </>
+          ) : isLate ? (
+            // Trễ kinh: hiển thị số ngày trễ, không dự đoán thêm
+            <>
+              <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.85rem' }}>
+                Kỳ kinh chậm
+              </span>
+              <h2 style={{ fontSize: '3.5rem', margin: '0', color: 'var(--primary)', lineHeight: 1, fontWeight: 800 }}>
+                {lateDays}
+              </h2>
+              <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.9rem', marginBottom: '8px' }}>
+                ngày
+              </span>
+              {!usePartnerData && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleStartPeriod(); }}
+                  style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 4px 10px rgba(232, 67, 147, 0.4)' }}
+                >
+                  Đã có kinh
+                </button>
+              )}
+            </>
           ) : isSelectedToday && daysUntilNextPeriod !== null && daysUntilNextPeriod <= 1 ? (
             daysUntilNextPeriod === 0 || daysUntilNextPeriod === 1 ? (
               <>
@@ -534,8 +560,8 @@ const Home = () => {
         </AnimatePresence>
       </div>
 
-      {/* Ovulation date info banner */}
-      {cycle && nextOvulationDate && (
+      {/* Ovulation date info banner - ẩn khi đang trễ kinh */}
+      {cycle && nextOvulationDate && !isLate && (
         <div style={{
           background: 'var(--surface)',
           borderRadius: '12px',
@@ -559,7 +585,7 @@ const Home = () => {
       {/* Countdown banner */}
       {cycle && daysUntilNextPeriod !== null && (
         <div style={{
-          background: daysUntilNextPeriod <= 3 ? 'linear-gradient(135deg, var(--primary), var(--primary-light))' : 'var(--surface)',
+          background: isLate ? 'linear-gradient(135deg, var(--primary), var(--primary-light))' : (daysUntilNextPeriod <= 3 ? 'linear-gradient(135deg, var(--primary), var(--primary-light))' : 'var(--surface)'),
           borderRadius: '12px',
           padding: '14px 20px',
           marginBottom: '20px',
@@ -569,9 +595,11 @@ const Home = () => {
           boxShadow: 'var(--shadow-sm)',
           border: '1px solid var(--border)'
         }}>
-          <span style={{ fontSize: '0.9rem', color: daysUntilNextPeriod <= 3 ? '#fff' : 'var(--text-muted)' }}>Kỳ kinh tiếp theo</span>
-          <span style={{ fontWeight: 'bold', fontSize: '1.1rem', color: daysUntilNextPeriod <= 3 ? '#fff' : 'var(--primary)' }}>
-            {daysUntilNextPeriod <= 0 ? 'Đã đến hạn!' : `Còn ${daysUntilNextPeriod} ngày`}
+          <span style={{ fontSize: '0.9rem', color: (isLate || daysUntilNextPeriod <= 3) ? '#fff' : 'var(--text-muted)' }}>
+            {isLate ? '⚠️ Trễ kinh' : 'Kỳ kinh tiếp theo'}
+          </span>
+          <span style={{ fontWeight: 'bold', fontSize: '1.1rem', color: (isLate || daysUntilNextPeriod <= 3) ? '#fff' : 'var(--primary)' }}>
+            {isLate ? `${lateDays} ngày` : (daysUntilNextPeriod <= 0 ? 'Đã đến hạn!' : `Còn ${daysUntilNextPeriod} ngày`)}
           </span>
         </div>
       )}
