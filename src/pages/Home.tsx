@@ -546,32 +546,37 @@ const Home = () => {
             </div>
           )}
 
-          {/* Unified Log Period Button */}
-          {startOfDay(selectedDate) <= startOfDay(today) && selectedChance !== 'Đang Hành Kinh' && selectedChance !== 'Trứng rụng' && !usePartnerData && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); handleStartPeriod(selectedDate); }}
-              style={{
-                position: 'absolute',
-                bottom: '15px',
-                background: 'linear-gradient(135deg, #e84393, #c0307a)',
-                color: 'white',
-                border: 'none',
-                padding: '6px 18px',
-                borderRadius: '20px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                boxShadow: '0 4px 12px rgba(232, 67, 147, 0.5)',
-                letterSpacing: '0.02em',
-                zIndex: 10
-              }}
-            >
-              ♥ Đã có kinh {isSameDay(selectedDate, today) ? '' : 'ngày này'}
-            </button>
-          )}
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Unified Log Period Button */}
+      {startOfDay(selectedDate) <= startOfDay(today) && selectedChance !== 'Đang Hành Kinh' && selectedChance !== 'Trứng rụng' && !usePartnerData && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+          <button 
+            onClick={() => handleStartPeriod(selectedDate)}
+            style={{
+              background: 'linear-gradient(135deg, #e84393, #c0307a)',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '24px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontSize: '1rem',
+              boxShadow: '0 4px 14px rgba(232, 67, 147, 0.4)',
+              letterSpacing: '0.02em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              width: '80%',
+              justifyContent: 'center'
+            }}
+          >
+            <span style={{ fontSize: '1.2rem' }}>♥</span> Đã có kinh {isSameDay(selectedDate, today) ? '' : 'ngày này'}
+          </button>
+        </div>
+      )}
 
       {/* Ovulation date info banner - ẩn khi đang trễ kinh */}
       {cycle && nextOvulationDate && !isLate && (
