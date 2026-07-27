@@ -10,6 +10,7 @@ import Insights from './pages/Insights';
 import { useAuth, AuthProvider } from './contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { analyzeImageBrightness } from './utils/colorUtils';
+import InstallApp from './components/InstallApp';
 
 // Wrapper để quản lý Background theo cá nhân hóa
 const ThemeWrapper = ({ children }: { children: ReactElement }) => {
@@ -139,6 +140,7 @@ function App() {
         <HashRouter>
           <div className="app-container">
             <div className="content-area">
+              <InstallApp />
               <Routes>
                 <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
                 <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
