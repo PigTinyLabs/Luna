@@ -108,10 +108,11 @@ const Home = () => {
   };
 
 
-  const handleStartPeriod = async () => {
+  const handleStartPeriod = async (dateOverride?: Date) => {
     if (!currentUser) return;
     setLoading(true);
-    await startNewCycle(currentUser.uid, startOfDay(new Date()), { averageCycleLength: 28, averagePeriodLength: 5 });
+    const dateToUse = dateOverride ? startOfDay(dateOverride) : startOfDay(new Date());
+    await startNewCycle(currentUser.uid, dateToUse, { averageCycleLength: 28, averagePeriodLength: 5 });
     const [data, history] = await Promise.all([
       getLatestCycle(currentUser.uid),
       getAllCycles(currentUser.uid)
@@ -170,7 +171,7 @@ const Home = () => {
       case 'Cao': return 'fertile';
       case 'Thấp': return 'low';
       case 'An toàn': return 'safe';
-      case 'Trễ kinh': return 'period';
+      case 'Trễ kinh': return 'late';
       default: return '';
     }
   };
@@ -574,6 +575,28 @@ const Home = () => {
                   ? selectedChance 
                   : `Thụ thai: ${selectedChance === 'Trứng rụng' ? 'Đỉnh điểm' : selectedChance}`}
               </div>
+
+              {/* Mark period for past dates */}
+              {startOfDay(selectedDate) < startOfDay(today) && selectedChance !== 'Đang Hành Kinh' && !usePartnerData && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleStartPeriod(selectedDate); }}
+                  style={{
+                    marginTop: '16px',
+                    background: 'linear-gradient(135deg, var(--primary), #e84393)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 20px',
+                    borderRadius: '20px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    boxShadow: '0 4px 10px rgba(155, 89, 182, 0.4)',
+                    letterSpacing: '0.02em'
+                  }}
+                >
+                  ♥ Đã có kinh ngày này
+                </button>
+              )}
             </>
           ) : (
             <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -942,7 +965,7 @@ const Home = () => {
             {!cycle ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>Bạn chưa có dữ liệu chu kỳ nào. Hãy bắt đầu!</p>
-                <button className="btn-primary" onClick={handleStartPeriod}>
+                <button className="btn-primary" onClick={() => handleStartPeriod()}>
                   Bắt đầu chu kỳ hôm nay
                 </button>
                 <button className="btn-secondary" style={{ width: '100%', background: 'transparent', border: '1px solid var(--border)' }} onClick={() => setShowHistoryModal(true)}>
@@ -953,7 +976,7 @@ const Home = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <p><strong>Kỳ kinh tiếp theo:</strong> {cycle.expectedNextPeriod.toLocaleDateString()}</p>
                 <p><strong>Ngày rụng trứng:</strong> {cycle.expectedOvulation.toLocaleDateString()}</p>
-                <button className="btn-secondary" style={{ width: '100%', marginTop: '10px' }} onClick={handleStartPeriod}>
+                <button className="btn-secondary" style={{ width: '100%', marginTop: '10px' }} onClick={() => handleStartPeriod()}>
                   Bắt đầu chu kỳ mới
                 </button>
                 <button className="btn-secondary" style={{ width: '100%', background: 'transparent', border: '1px solid var(--border)' }} onClick={() => setShowHistoryModal(true)}>

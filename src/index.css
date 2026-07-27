@@ -362,6 +362,49 @@ p { color: var(--text-muted); font-size: 0.95rem; }
   box-shadow: 0 4px 10px rgba(155, 89, 182, 0.3);
 }
 
+.day-strip-item .day-num.late {
+  color: #e84393;
+  font-weight: 700;
+  position: relative;
+}
+
+/* Overrides for late day when selected (active) */
+.day-strip-item.active .day-num.late {
+  background: #e84393;
+  color: white;
+  box-shadow: 0 4px 14px rgba(232, 67, 147, 0.4);
+}
+
+/* Hide the dot when active (since background is already pink) */
+.day-strip-item.active .day-num.late::after {
+  display: none;
+}
+
+/* Overrides for late day when it is today */
+.day-strip-item.today .day-num.late {
+  border-color: #e84393;
+  animation: pulseLateToday 2s infinite;
+}
+
+@keyframes pulseLateToday {
+  0% { box-shadow: 0 0 0 0 rgba(232, 67, 147, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(232, 67, 147, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(232, 67, 147, 0); }
+}
+
+.day-strip-item .day-num.late::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #e84393;
+  box-shadow: 0 0 6px rgba(232, 67, 147, 0.6);
+}
+
 .day-strip-item .day-num.ovulation {
   background: var(--secondary) !important;
   color: #2f3640 !important;
