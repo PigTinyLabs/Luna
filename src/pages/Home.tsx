@@ -180,7 +180,7 @@ const Home = () => {
   const isSelectedToday = isSameDay(selectedDate, today);
   const isPredicted = (cycle && allCycles.length > 0) ? isDatePredicted(selectedDate, allCycles) : false;
   
-  const showCountdownOverride = !isPredicted && !isLate && ((daysUntilNextPeriod !== null && daysUntilNextPeriod > 0 && daysUntilNextPeriod <= 3) || (daysUntilNextOvulation !== null && daysUntilNextOvulation > 0 && daysUntilNextOvulation <= 3));
+  const showCountdownOverride = !isPredicted && !isLate && (startOfDay(selectedDate) >= startOfDay(today)) && ((daysUntilNextPeriod !== null && daysUntilNextPeriod > 0 && daysUntilNextPeriod <= 3) || (daysUntilNextOvulation !== null && daysUntilNextOvulation > 0 && daysUntilNextOvulation <= 3));
   const isTransparentCircle = isPredicted || showCountdownOverride;
 
   // If male and not connected to a partner, show empty state immediately
@@ -418,26 +418,6 @@ const Home = () => {
                 </h2>
                 <span style={{ color: 'rgba(232,67,147,0.8)', fontWeight: 600, fontSize: '1.1rem' }}>ngày</span>
               </div>
-              {!usePartnerData && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleStartPeriod(); }}
-                  style={{
-                    marginTop: '8px',
-                    background: 'linear-gradient(135deg, #e84393, #c0307a)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 20px',
-                    borderRadius: '20px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    boxShadow: '0 4px 14px rgba(232, 67, 147, 0.5)',
-                    letterSpacing: '0.02em'
-                  }}
-                >
-                  ♥ Đã có kinh
-                </button>
-              )}
             </>
           ) : isSelectedToday && daysUntilNextPeriod !== null && daysUntilNextPeriod <= 1 ? (
             daysUntilNextPeriod === 0 || daysUntilNextPeriod === 1 ? (
@@ -448,14 +428,6 @@ const Home = () => {
                 <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '1.1rem', textAlign: 'center', marginBottom: '12px' }}>
                   có thể bắt đầu<br/>hôm nay
                 </span>
-                {!usePartnerData && (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleStartPeriod(); }}
-                    style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 20px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 10px rgba(232, 67, 147, 0.4)' }}
-                  >
-                    Xác nhận
-                  </button>
-                )}
               </>
             ) : (
               <>
@@ -468,14 +440,6 @@ const Home = () => {
                 <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.9rem', marginBottom: '8px' }}>
                   ngày
                 </span>
-                {!usePartnerData && (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleStartPeriod(); }}
-                    style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 4px 10px rgba(232, 67, 147, 0.4)' }}
-                  >
-                    Đã có kinh
-                  </button>
-                )}
               </>
             )
           ) : isPredicted ? (
@@ -575,33 +539,35 @@ const Home = () => {
                   ? selectedChance 
                   : `Thụ thai: ${selectedChance === 'Trứng rụng' ? 'Đỉnh điểm' : selectedChance}`}
               </div>
-
-              {/* Mark period for past dates */}
-              {startOfDay(selectedDate) < startOfDay(today) && selectedChance !== 'Đang Hành Kinh' && !usePartnerData && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleStartPeriod(selectedDate); }}
-                  style={{
-                    marginTop: '16px',
-                    background: 'linear-gradient(135deg, var(--primary), #e84393)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 20px',
-                    borderRadius: '20px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    boxShadow: '0 4px 10px rgba(155, 89, 182, 0.4)',
-                    letterSpacing: '0.02em'
-                  }}
-                >
-                  ♥ Đã có kinh ngày này
-                </button>
-              )}
             </>
           ) : (
             <div style={{ textAlign: 'center', padding: '20px' }}>
               <h3 style={{ color: 'var(--text-muted)' }}>Chưa có dữ liệu</h3>
             </div>
+          )}
+
+          {/* Unified Log Period Button */}
+          {startOfDay(selectedDate) <= startOfDay(today) && selectedChance !== 'Đang Hành Kinh' && !usePartnerData && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleStartPeriod(selectedDate); }}
+              style={{
+                position: 'absolute',
+                bottom: '15px',
+                background: 'linear-gradient(135deg, #e84393, #c0307a)',
+                color: 'white',
+                border: 'none',
+                padding: '6px 18px',
+                borderRadius: '20px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                boxShadow: '0 4px 12px rgba(232, 67, 147, 0.5)',
+                letterSpacing: '0.02em',
+                zIndex: 10
+              }}
+            >
+              ♥ Đã có kinh {isSameDay(selectedDate, today) ? '' : 'ngày này'}
+            </button>
           )}
           </motion.div>
         </AnimatePresence>
