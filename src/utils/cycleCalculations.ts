@@ -244,12 +244,16 @@ export const getGlobalPregnancyChance = (currentDate: Date, cycles: Cycle[]): Pr
   }
 
   // Chỉ dự đoán chu kỳ tương lai khi chưa trễ kinh
+  const isCurrentlyLate = today > expectedNextPeriodDay; // đang trễ kinh hay không
   const future = predictFutureCycles(cycles, 12);
   for (const f of future) {
     const isBleeding = isWithinInterval(currentDate, {
       start: f.start,
       end: f.end
     });
+    // Nếu đang trễ kinh và ngày này đã qua (trong quá khứ) nhưng nằm trong vùng predicted period
+    // → dự đoán đó đã sai, hiện màu trắng (Chưa rõ) thay vì màu kinh
+    if (isBleeding && isCurrentlyLate && normalizedDate < today) return 'Chưa rõ';
     if (isBleeding) return 'Dự đoán hành kinh';
 
     const isOvulation = isSameDay(currentDate, f.ovulation);

@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/Luna/dev-sw.js?dev-sw', { scope: '/Luna/', type: 'classic' })
