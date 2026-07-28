@@ -135,14 +135,18 @@ export const getGlobalCycleDay = (currentDate: Date, cycles: Cycle[]): number =>
   return differenceInDays(currentDate, latestStart) + 1;
 };
 
-export const isDatePredicted = (currentDate: Date, cycles: Cycle[]): boolean => {
+export const isDatePredicted = (currentDate: Date, cycles: Cycle[], pregnancyStartDate?: Date | null): boolean => {
+  if (isPregnantOnDate(currentDate, pregnancyStartDate)) return false;
   if (cycles.length === 0) return false;
   const future = predictFutureCycles(cycles, 1);
   if (future.length === 0) return false;
   return currentDate >= future[0].start;
 };
 
-export const getNextEvents = (currentDate: Date, cycles: Cycle[]) => {
+export const getNextEvents = (currentDate: Date, cycles: Cycle[], pregnancyStartDate?: Date | null) => {
+  if (isPregnantOnDate(currentDate, pregnancyStartDate)) {
+    return { nextPeriodDate: null, nextOvulationDate: null, daysUntilNextPeriod: null, daysUntilNextOvulation: null, isLate: false, lateDays: 0 };
+  }
   if (cycles.length === 0) return { nextPeriodDate: null, nextOvulationDate: null, daysUntilNextPeriod: null, daysUntilNextOvulation: null, isLate: false, lateDays: 0 };
   const normalizedDate = startOfDay(currentDate);
   const sorted = [...cycles].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
@@ -184,7 +188,15 @@ export const getNextEvents = (currentDate: Date, cycles: Cycle[]) => {
   };
 };
 
-export type PregnancyChance = 'Trứng rụng' | 'Cao' | 'Thấp' | 'An toàn' | 'Đang Hành Kinh' | 'Dự đoán hành kinh' | 'Chưa rõ' | 'Trễ kinh';
+export type PregnancyChance = 'Trứng rụng' | 'Cao' | 'Thấp' | 'An toàn' | 'Đang Hành Kinh' | 'Dự đoán hành kinh' | 'Chưa rõ' | 'Trễ kinh' | 'Mang thai';
+
+export const isPregnantOnDate = (date: Date, pregnancyStartDate?: Date | null): boolean => {
+  if (!pregnancyStartDate) return false;
+  const start = startOfDay(pregnancyStartDate);
+  const end = addDays(start, 280); // 40 tuần
+  const normalizedDate = startOfDay(date);
+  return normalizedDate >= start && normalizedDate <= end;
+};
 
 export const predictFutureCycles = (cycles: Cycle[], count: number = 6) => {
   if (cycles.length === 0) return [];
@@ -205,7 +217,8 @@ export const predictFutureCycles = (cycles: Cycle[], count: number = 6) => {
   return future;
 };
 
-export const getGlobalPregnancyChance = (currentDate: Date, cycles: Cycle[]): PregnancyChance => {
+export const getGlobalPregnancyChance = (currentDate: Date, cycles: Cycle[], pregnancyStartDate?: Date | null): PregnancyChance => {
+  if (isPregnantOnDate(currentDate, pregnancyStartDate)) return 'Mang thai';
   if (cycles.length === 0) return 'Chưa rõ';
   
   const sorted = [...cycles].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());

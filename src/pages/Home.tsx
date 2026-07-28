@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getLatestCycle, startNewCycle, addHistoricalCycle, getAllCycles } from '../services/firestore';
+import { getLatestCycle, startNewCycle, addHistoricalCycle, getAllCycles, updatePregnancyStatus } from '../services/firestore';
 import type { Cycle } from '../services/firestore';
 import { getGlobalCycleDay, getGlobalPregnancyChance, calculateSmartPredictions, isDatePredicted, getNextEvents } from '../utils/cycleCalculations';
 import { differenceInDays, format, addDays, subDays, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval, startOfDay } from 'date-fns';
@@ -13,7 +13,7 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Info, CheckCircle2
 const WEEKDAY_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
 const Home = () => {
-  const { currentUser, profile, viewingUid, usePartnerData, setUsePartnerData } = useAuth();
+  const { currentUser, profile, viewingUid, usePartnerData, setUsePartnerData, reloadProfile } = useAuth();
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [allCycles, setAllCycles] = useState<Cycle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,7 +146,7 @@ const Home = () => {
   const today = new Date();
   const cycleDay = (cycle && allCycles.length > 0) ? getGlobalCycleDay(selectedDate, allCycles) : 0;
   const smartPred = allCycles.length > 0 ? calculateSmartPredictions(allCycles) : null;
-  const { nextOvulationDate, daysUntilNextPeriod, daysUntilNextOvulation, isLate, lateDays } = getNextEvents(selectedDate, allCycles);
+  const { nextOvulationDate, daysUntilNextPeriod, daysUntilNextOvulation, isLate, lateDays } = getNextEvents(selectedDate, allCycles, profile?.pregnancyStartDate);
 
   const isMale = profile?.gender === 'male';
 
@@ -159,7 +159,7 @@ const Home = () => {
   // Get pregnancy chance for a specific date
   const getChanceForDate = (date: Date) => {
     if (!cycle || allCycles.length === 0) return 'Chưa rõ';
-    return getGlobalPregnancyChance(date, allCycles);
+    return getGlobalPregnancyChance(date, allCycles, profile?.pregnancyStartDate);
   };
 
   // Get marker class for day strip
@@ -172,13 +172,14 @@ const Home = () => {
       case 'Thấp': return 'low';
       case 'An toàn': return 'safe';
       case 'Trễ kinh': return 'late';
+      case 'Mang thai': return 'pregnancy';
       default: return '';
     }
   };
 
-  const selectedChance = (cycle && allCycles.length > 0) ? getGlobalPregnancyChance(selectedDate, allCycles) : 'Chưa rõ';
+  const selectedChance = (cycle && allCycles.length > 0) ? getGlobalPregnancyChance(selectedDate, allCycles, profile?.pregnancyStartDate) : 'Chưa rõ';
   const isSelectedToday = isSameDay(selectedDate, today);
-  const isPredicted = (cycle && allCycles.length > 0) ? isDatePredicted(selectedDate, allCycles) : false;
+  const isPredicted = (cycle && allCycles.length > 0) ? isDatePredicted(selectedDate, allCycles, profile?.pregnancyStartDate) : false;
   
   const showCountdownOverride = !isPredicted && !isLate && (startOfDay(selectedDate) >= startOfDay(today)) && ((daysUntilNextPeriod !== null && daysUntilNextPeriod > 0 && daysUntilNextPeriod <= 3) || (daysUntilNextOvulation !== null && daysUntilNextOvulation > 0 && daysUntilNextOvulation <= 3));
   const isTransparentCircle = isPredicted || showCountdownOverride;
@@ -224,6 +225,8 @@ const Home = () => {
         return 'Giai đoạn an toàn. Hormone ổn định, cơ thể ở trạng thái bình thường.';
       case 'Trễ kinh':
         return 'Kỳ kinh chưa xuất hiện đúng hạn. Hãy theo dõi thêm. Trễ kinh có thể do căng thẳng, thay đổi cân nặng hoặc mang thai.';
+      case 'Mang thai':
+        return 'Đang trong thai kỳ. Hãy ăn uống đủ chất, bổ sung vitamin, khám thai định kỳ và nghỉ ngơi hợp lý.';
       default:
         return 'Ghi chép chu kỳ để nhận phân tích chi tiết hơn nhé!';
     }
@@ -244,6 +247,8 @@ const Home = () => {
         return 'Cơ thể thường ở trạng thái ổn định nhất, ít triệu chứng bất thường.';
       case 'Trễ kinh':
         return 'Có thể có đau ngực, buồn nôn, mệt mỏi hoặc chướng bụng. Nếu trễ > 7 ngày, nên thử que thử thai.';
+      case 'Mang thai':
+        return 'Buồn nôn, ốm nghén, mệt mỏi, đi tiểu nhiều, nhạy cảm với mùi vị là các triệu chứng phổ biến.';
       default:
         return 'Theo dõi cơ thể và ghi chép để nhận phân tích chính xác hơn.';
     }
@@ -396,7 +401,25 @@ const Home = () => {
               transition: 'box-shadow 0.4s ease, border-color 0.4s ease, background 0.4s ease',
             }}
           >
-            {showCountdownOverride ? (
+            {selectedChance === 'Mang thai' ? (() => {
+              const pDays = differenceInDays(selectedDate, startOfDay(profile!.pregnancyStartDate!));
+              const pWeeks = Math.floor(pDays / 7);
+              const pRem = pDays % 7;
+              return (
+                <>
+                  <span style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🤰</span>
+                  <span style={{ color: 'rgba(232,67,147,0.7)', fontWeight: 600, fontSize: '0.9rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    Thai kỳ
+                  </span>
+                  <h2 style={{ fontSize: '2.2rem', margin: '4px 0', color: 'var(--text-main)', lineHeight: 1.1, fontWeight: 800, textAlign: 'center' }}>
+                    Tuần {pWeeks}
+                  </h2>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.95rem' }}>
+                    {pRem > 0 ? `+ ${pRem} ngày` : ''}
+                  </span>
+                </>
+              );
+            })() : showCountdownOverride ? (
             <>
               <span style={{ color: 'var(--text-main)', fontWeight: 600, fontSize: '1rem', marginBottom: '8px' }}>
                 {daysUntilNextPeriod !== null && daysUntilNextPeriod <= 3 ? 'Hành kinh sau' : 'Rụng trứng sau'}
@@ -551,30 +574,77 @@ const Home = () => {
       </div>
 
       {/* Unified Log Period Button */}
-      {startOfDay(selectedDate) <= startOfDay(today) && selectedChance !== 'Đang Hành Kinh' && selectedChance !== 'Trứng rụng' && !usePartnerData && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-          <button 
-            onClick={() => handleStartPeriod(selectedDate)}
-            style={{
-              background: 'linear-gradient(135deg, #e84393, #c0307a)',
-              color: 'white',
-              border: 'none',
-              padding: '12px 24px',
-              borderRadius: '24px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontSize: '1rem',
-              boxShadow: '0 4px 14px rgba(232, 67, 147, 0.4)',
-              letterSpacing: '0.02em',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              width: '80%',
-              justifyContent: 'center'
-            }}
-          >
-            <span style={{ fontSize: '1.2rem' }}>♥</span> Đã có kinh {isSameDay(selectedDate, today) ? '' : 'ngày này'}
-          </button>
+      {startOfDay(selectedDate) <= startOfDay(today) && !usePartnerData && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', marginBottom: '16px' }}>
+          {selectedChance === 'Mang thai' ? (
+            <button 
+              onClick={async () => {
+                if (window.confirm('Bạn có chắc chắn muốn huỷ trạng thái thai kỳ?')) {
+                  await updatePregnancyStatus(currentUser!.uid, null);
+                  await reloadProfile();
+                }
+              }}
+              style={{
+                background: 'var(--surface)',
+                color: 'var(--text-muted)',
+                border: '1px solid var(--border)',
+                padding: '10px 20px',
+                borderRadius: '24px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+              }}
+            >
+              Huỷ trạng thái thai kỳ
+            </button>
+          ) : (
+            <>
+              {selectedChance !== 'Đang Hành Kinh' && selectedChance !== 'Trứng rụng' && (
+                <button 
+                  onClick={() => handleStartPeriod(selectedDate)}
+                  style={{
+                    background: 'linear-gradient(135deg, #e84393, #c0307a)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '24px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    boxShadow: '0 4px 14px rgba(232, 67, 147, 0.4)',
+                    letterSpacing: '0.02em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '80%',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <span style={{ fontSize: '1.2rem' }}>♥</span> Đã có kinh {isSameDay(selectedDate, today) ? '' : 'ngày này'}
+                </button>
+              )}
+              <button 
+                onClick={async () => {
+                  if (window.confirm('Bạn muốn đánh dấu ngày này là ngày bắt đầu thai kỳ?')) {
+                    await updatePregnancyStatus(currentUser!.uid, startOfDay(selectedDate));
+                    await reloadProfile();
+                  }
+                }}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--text-muted)',
+                  border: '1px dashed var(--border)',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                }}
+              >
+                🤰 Bắt đầu thai kỳ từ ngày này
+              </button>
+            </>
+          )}
         </div>
       )}
 

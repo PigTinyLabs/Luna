@@ -398,11 +398,26 @@ p { color: var(--text-muted); font-size: 0.95rem; }
   bottom: 2px;
   left: 50%;
   transform: translateX(-50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
+  width: 4px;
+  height: 4px;
   background-color: #e84393;
-  box-shadow: 0 0 6px rgba(232, 67, 147, 0.6);
+  border-radius: 50%;
+}
+
+.day-strip-item .day-num.pregnancy {
+  background: linear-gradient(135deg, #a8e6cf, #dcedc1);
+  color: #2d3436;
+  box-shadow: 0 4px 10px rgba(168, 230, 207, 0.4);
+}
+
+.day-strip-item.active .day-num.pregnancy {
+  background: linear-gradient(135deg, #78e08f, #38ada9);
+  color: white;
+  box-shadow: 0 4px 14px rgba(56, 173, 169, 0.4);
+}
+
+.day-strip-item.today .day-num.pregnancy {
+  border-color: #38ada9;
 }
 
 .day-strip-item .day-num.ovulation {

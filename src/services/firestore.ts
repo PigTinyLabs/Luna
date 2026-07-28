@@ -27,6 +27,7 @@ export interface UserProfile {
   partnerGender?: 'male' | 'female';
   themeBackground?: string;
   periodIcon?: string;
+  pregnancyStartDate?: Date | null;
 }
 
 // Convert Firestore Timestamp to Date, safely
@@ -271,5 +272,16 @@ export const getAllDailyLogs = async (userId: string): Promise<DailyLog[]> => {
   } catch (error) {
     console.error("Error getting all daily logs:", error);
     return [];
+  }
+};
+
+export const updatePregnancyStatus = async (userId: string, startDate: Date | null) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, { pregnancyStartDate: startDate }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error updating pregnancy status:", error);
+    return false;
   }
 };
